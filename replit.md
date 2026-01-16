@@ -78,3 +78,26 @@ Models are scored based on weighted combination of:
 - **Danawa Auto**: Korean automotive sales data portal
 - URL patterns documented in `attached_assets/` for domestic and import models
 - Data includes monthly sales, market share, and period-over-period changes
+
+## Netlify Deployment
+
+The application is configured for Netlify deployment:
+
+### Configuration
+- **netlify.toml**: Build settings and redirects
+- **netlify/functions/radar.ts**: Serverless function for API
+
+### Build Settings
+- Build command: `npm run build`
+- Publish directory: `dist/public`
+- Functions directory: `netlify/functions`
+
+### Deployment Steps
+1. Connect your Netlify account to the Git repository
+2. Netlify will automatically detect the `netlify.toml` configuration
+3. Set any required environment variables in Netlify dashboard
+4. Deploy
+
+### API Redirects
+- `/api/*` requests are redirected to `/.netlify/functions/*`
+- SPA fallback routes all other paths to `index.html`

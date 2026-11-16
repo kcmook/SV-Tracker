@@ -1,0 +1,274 @@
+<title>Regen Blend Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/*__CSS__*/
+</style>
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><i class="m-r"></i><i class="m-h"></i></span>
+      <div class="brand-text">
+        <strong data-i18n="app.title">회생 제동 협조 제어 PoC</strong>
+        <span data-i18n="app.sub">이질감 개선 · AI 배분 로직</span>
+      </div>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="lang-ko" data-lang="ko">한국어</button>
+      <button type="button" id="lang-en" data-lang="en">English</button>
+    </div>
+  </div>
+  <nav class="wrap tabs" id="tabs" aria-label="sections">
+    <a href="#overview" data-tab="overview" data-i18n="tab.overview">개요</a>
+    <a href="#data" data-tab="data" data-i18n="tab.data">데이터 탐색</a>
+    <a href="#series" data-tab="series" data-i18n="tab.series">실측 시계열</a>
+    <a href="#model" data-tab="model" data-i18n="tab.model">AI 모델</a>
+    <a href="#simulator" data-tab="simulator" data-i18n="tab.simulator">협조 제어 시뮬레이터</a>
+    <a href="#validation" data-tab="validation" data-i18n="tab.validation">검증 · 기대효과</a>
+  </nav>
+</header>
+
+<main class="wrap" id="main">
+  <!-- 1. 개요 -->
+  <section class="view" id="view-overview">
+    <div class="hero">
+      <p class="eyebrow" data-i18n="ov.eyebrow">DX 과제 PoC · 샘플 데이터 6,000 제동 이벤트</p>
+      <h1 data-i18n="ov.h1">"전기차를 탔는지 모를 정도"의 제동감</h1>
+      <p class="lead" data-i18n="ov.lead"></p>
+    </div>
+    <div class="kpis" id="ov-kpis"></div>
+    <p class="note" data-i18n="ov.kpinote"></p>
+
+    <h2 data-i18n="ov.flow.h">구현 흐름</h2>
+    <ol class="flow" id="ov-flow"></ol>
+
+    <div class="cols2">
+      <div class="panel">
+        <h3 data-i18n="ov.bg.h">배경</h3>
+        <p data-i18n="ov.bg.p"></p>
+        <div class="split-bar" aria-hidden="true">
+          <span class="sb-r" style="width:62%"><b data-i18n="ov.sb.r">회생</b></span>
+          <span class="sb-h" style="width:38%"><b data-i18n="ov.sb.h">유압</b></span>
+        </div>
+        <p class="small muted" data-i18n="ov.sb.cap"></p>
+      </div>
+      <div class="panel">
+        <h3 data-i18n="ov.goal.h">PoC 목표와 범위</h3>
+        <ul class="ticks" id="ov-goals"></ul>
+      </div>
+    </div>
+    <h2 data-i18n="ov.param.h">AI가 조절하는 배분 파라미터 4종</h2>
+    <div class="table-wrap"><table class="tbl" id="ov-params"></table></div>
+  </section>
+
+  <!-- 2. 데이터 -->
+  <section class="view" id="view-data" hidden>
+    <h1 data-i18n="da.h1">데이터 탐색</h1>
+    <p class="lead" data-i18n="da.lead"></p>
+    <div class="table-wrap"><table class="tbl" id="da-sets"></table></div>
+    <div class="cols2">
+      <div class="panel">
+        <h3 data-i18n="da.miss.h">결측치와 처리</h3>
+        <div class="table-wrap"><table class="tbl compact" id="da-miss"></table></div>
+      </div>
+      <div class="panel">
+        <h3 data-i18n="da.road.h">노면 분류 기준</h3>
+        <p class="small" data-i18n="da.road.p"></p>
+        <div class="chart h220"><canvas id="ch-road"></canvas></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3 data-i18n="da.corr.h">상관 분석: 무엇이 이질감을 만드는가</h3>
+      <p class="small" data-i18n="da.corr.p"></p>
+      <div class="table-wrap"><table class="heat" id="da-corr"></table></div>
+    </div>
+    <div class="cols2">
+      <div class="panel">
+        <h3 data-i18n="da.hist.h">블렌딩 구간 저크 분포</h3>
+        <div class="chart h240"><canvas id="ch-hist-jerk"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3 data-i18n="da.histc.h">승차감 점수 분포 (라벨 있는 이벤트)</h3>
+        <div class="chart h240"><canvas id="ch-hist-comfort"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 시계열 -->
+  <section class="view" id="view-series" hidden>
+    <h1 data-i18n="se.h1">실측 시계열 뷰어 (100 Hz)</h1>
+    <p class="lead" data-i18n="se.lead"></p>
+    <div class="toolbar">
+      <label for="se-event" data-i18n="se.pick">이벤트</label>
+      <select id="se-event"></select>
+      <label class="chk"><input type="checkbox" id="se-linked"> <span data-i18n="se.linked">파라미터 연결 이벤트만 (15)</span></label>
+      <label class="chk"><input type="checkbox" id="se-sim" checked> <span data-i18n="se.sim">1 ms 시뮬레이션 겹쳐 보기</span></label>
+    </div>
+    <div class="facts" id="se-facts"></div>
+    <div class="panel">
+      <h3 data-i18n="se.c1">속도와 브레이크 페달</h3>
+      <div class="chart h220"><canvas id="ch-se-speed"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3 data-i18n="se.c2">요구 감속도 vs 실측 감속도 · 저크</h3>
+      <div class="chart h260"><canvas id="ch-se-decel"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3 data-i18n="se.c3">제동력 분담: 회생 vs 유압</h3>
+      <div class="chart h260"><canvas id="ch-se-force"></canvas></div>
+      <p class="small muted" data-i18n="se.c3n"></p>
+    </div>
+  </section>
+
+  <!-- 4. 모델 -->
+  <section class="view" id="view-model" hidden>
+    <h1 data-i18n="mo.h1">AI 모델: 운전자 습관 학습과 대리모델</h1>
+    <p class="lead" data-i18n="mo.lead"></p>
+    <div class="table-wrap"><table class="tbl" id="mo-perf"></table></div>
+    <div class="chips" id="mo-target" role="group"></div>
+    <div class="cols2">
+      <div class="panel">
+        <h3 data-i18n="mo.sc.h">실제 vs 예측 (test)</h3>
+        <div class="chart h300"><canvas id="ch-mo-scatter"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3 data-i18n="mo.imp.h">변수 영향도 (순열 중요도, test R² 감소)</h3>
+        <div class="chart h300"><canvas id="ch-mo-imp"></canvas></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3 data-i18n="mo.pd.h">파라미터별 효과 (부분의존)</h3>
+      <p class="small" data-i18n="mo.pd.p"></p>
+      <div class="grid4" id="mo-pd"></div>
+    </div>
+    <div class="cols2">
+      <div class="panel">
+        <h3 data-i18n="mo.dr.h">운전자 제동 습관 군집 (48명)</h3>
+        <div class="chart h300"><canvas id="ch-mo-drivers"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3 data-i18n="mo.dt.h">유형별 특성</h3>
+        <div class="table-wrap"><table class="tbl compact" id="mo-dtypes"></table></div>
+        <p class="small muted" data-i18n="mo.dt.n"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. 시뮬레이터 -->
+  <section class="view" id="view-simulator" hidden>
+    <h1 data-i18n="si.h1">협조 제어 시뮬레이터 (제어 주기 1 ms)</h1>
+    <p class="lead" data-i18n="si.lead"></p>
+    <div class="sim">
+      <form class="controls panel" id="si-form" autocomplete="off">
+        <fieldset>
+          <legend data-i18n="si.f.sit">주행 상황</legend>
+          <label for="si-driver" data-i18n="si.driver">운전자 유형</label>
+          <select id="si-driver"></select>
+          <label for="si-road" data-i18n="si.road">노면</label>
+          <select id="si-road"></select>
+          <div class="rng" data-key="v0"><label for="si-v0"><span data-i18n="si.v0">초기 속도</span><output id="o-v0"></output></label><input type="range" id="si-v0" min="20" max="130" step="1" value="60"></div>
+          <div class="rng" data-key="target"><label for="si-target"><span data-i18n="si.target">목표 감속도</span><output id="o-target"></output></label><input type="range" id="si-target" min="0.8" max="6" step="0.05" value="2.3"></div>
+          <div class="rng" data-key="apply"><label for="si-apply"><span data-i18n="si.apply">페달 밟는 시간</span><output id="o-apply"></output></label><input type="range" id="si-apply" min="0.1" max="1.6" step="0.01" value="0.58"></div>
+          <div class="rng" data-key="soc"><label for="si-soc"><span data-i18n="si.soc">배터리 SOC</span><output id="o-soc"></output></label><input type="range" id="si-soc" min="10" max="99" step="1" value="66"></div>
+          <div class="rng" data-key="mass"><label for="si-mass"><span data-i18n="si.mass">차량 질량</span><output id="o-mass"></output></label><input type="range" id="si-mass" min="1900" max="2800" step="10" value="2240"></div>
+          <div class="rng" data-key="grade"><label for="si-grade"><span data-i18n="si.grade">도로 경사</span><output id="o-grade"></output></label><input type="range" id="si-grade" min="-6" max="6" step="0.1" value="0"></div>
+          <label class="chk"><input type="checkbox" id="si-mod"> <span data-i18n="si.mod">페달 변조(밟았다 뗐다)</span></label>
+        </fieldset>
+        <fieldset>
+          <legend data-i18n="si.f.ref">비교 기준</legend>
+          <label for="si-ref" data-i18n="si.ref">기존 캘리브레이션</label>
+          <select id="si-ref"></select>
+        </fieldset>
+        <fieldset>
+          <legend data-i18n="si.f.w">최적화 가중치</legend>
+          <div class="rng"><label for="si-wj"><span data-i18n="si.wj">블렌딩 저크 ↓</span><output id="o-wj"></output></label><input type="range" id="si-wj" min="0" max="1" step="0.05" value="0.4"></div>
+          <div class="rng"><label for="si-we"><span data-i18n="si.we">감속 오차 ↓</span><output id="o-we"></output></label><input type="range" id="si-we" min="0" max="1" step="0.05" value="0.25"></div>
+          <div class="rng"><label for="si-wr"><span data-i18n="si.wr">에너지 회수 ↑</span><output id="o-wr"></output></label><input type="range" id="si-wr" min="0" max="1" step="0.05" value="0.15"></div>
+          <div class="rng"><label for="si-wc"><span data-i18n="si.wc">승차감 점수 ↑</span><output id="o-wc"></output></label><input type="range" id="si-wc" min="0" max="1" step="0.05" value="0.2"></div>
+          <button type="button" class="btn-ghost" id="si-reset" data-i18n="si.reset">기본값으로</button>
+        </fieldset>
+      </form>
+      <div class="sim-out">
+        <div class="status" id="si-status"></div>
+        <div class="table-wrap"><table class="tbl" id="si-params"></table></div>
+        <div class="table-wrap"><table class="tbl" id="si-results"></table></div>
+        <div class="panel">
+          <h3 data-i18n="si.c1">감속도 응답</h3>
+          <div class="chart h240"><canvas id="ch-si-decel"></canvas></div>
+        </div>
+        <div class="panel">
+          <h3 data-i18n="si.c2">저크 (승객이 느끼는 울컥거림)</h3>
+          <div class="chart h220"><canvas id="ch-si-jerk"></canvas></div>
+          <p class="small muted" data-i18n="si.c2n"></p>
+        </div>
+        <div class="panel">
+          <h3 data-i18n="si.c3">제동력 분담 (AI 추천)</h3>
+          <div class="chart h240"><canvas id="ch-si-force"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. 검증 -->
+  <section class="view" id="view-validation" hidden>
+    <h1 data-i18n="va.h1">검증 · 기대효과</h1>
+    <p class="lead" data-i18n="va.lead"></p>
+    <div class="panel">
+      <h3 data-i18n="va.cmp.h">기존 CAL · 최적 고정 CAL · AI 적응형 비교</h3>
+      <div class="chart h260"><canvas id="ch-va-cmp"></canvas></div>
+      <p class="small muted" id="va-cmp-note"></p>
+    </div>
+    <div class="cols2">
+      <div class="panel">
+        <h3 data-i18n="va.road.h">노면별 개선율</h3>
+        <div class="chart h260"><canvas id="ch-va-road"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3 data-i18n="va.energy.h">에너지 회수 효과</h3>
+        <div class="kpis two" id="va-energy"></div>
+        <p class="small muted" data-i18n="va.energy.n"></p>
+      </div>
+    </div>
+    <div class="panel">
+      <h3 data-i18n="va.map.h">AI 캘리브레이션 맵: 운전자 유형 × 노면</h3>
+      <p class="small" data-i18n="va.map.p"></p>
+      <div class="table-wrap"><table class="tbl map" id="va-map"></table></div>
+    </div>
+    <div class="panel">
+      <h3 data-i18n="va.cal.h">캘리브레이션별 결과 (test, 모델 예측)</h3>
+      <div class="table-wrap"><table class="tbl compact" id="va-cal"></table></div>
+    </div>
+    <div class="panel">
+      <h3 data-i18n="va.sim.h">시뮬레이터 타당성 (실측 요구감속 재생)</h3>
+      <p class="small" id="va-sim-p"></p>
+      <div class="table-wrap"><table class="tbl compact" id="va-sim"></table></div>
+    </div>
+    <div class="cols2">
+      <div class="panel">
+        <h3 data-i18n="va.lim.h">한계</h3>
+        <ul class="ticks" id="va-lim"></ul>
+      </div>
+      <div class="panel">
+        <h3 data-i18n="va.next.h">다음 단계와 필요 지원</h3>
+        <ul class="ticks" id="va-next"></ul>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="wrap foot"><p class="small muted" data-i18n="foot"></p></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script type="application/json" id="model-data">/*__MODEL__*/</script>
+<script type="application/json" id="ts-data">/*__TS__*/</script>
+<script type="application/json" id="simvalid-data">/*__SIMVALID__*/</script>
+<script>
+/*__CORE__*/
+</script>
+<script>
+/*__I18N__*/
+</script>
+<script>
+/*__APP__*/
+</script>
